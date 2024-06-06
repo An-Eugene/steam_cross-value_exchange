@@ -65,6 +65,9 @@ function main() {
     new PriceElementPrecise('.accountData.price > a'),
     new PriceElementPrecise('#market_buyorder_dialog_walletbalance_amount'),
     new PriceElementPrecise('#market_buy_commodity_order_total'),
+    new PriceElementRough('.StoreOriginalPrice'),
+    new PriceElementRough('.StoreOriginalPrice + div'),
+    new PriceElementRough('.Panel.Focusable span > div'),
     new PriceElementRough('.discount_prices > div'),
     new PriceElementRough('.discount_final_price div:last-child'),
     new PriceElementRough('.game_area_dlc_price'),
@@ -534,7 +537,7 @@ class PriceComparison extends HTMLBlock{
       background: #484848!important;
       color: #8c8c8c!important;
     }
-    .comparison_element__discount_less {
+    .comparison_element__discount_more {
       background: #6b2922!important;
       color:#ee112b!important;
     }
