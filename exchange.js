@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.1
+// @version      0.4.2
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugeneа
 // @match        store.steampowered.com/*
 // @match        steamcommunity.com/*
+// @updateURL    https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/main/exchange.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=steampowered.com
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
