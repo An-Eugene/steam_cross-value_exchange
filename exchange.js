@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.2
+// @version      0.4.3
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugeneа
 // @match        store.steampowered.com/*
@@ -66,6 +66,7 @@ function main() {
     new PriceElementPrecise('.accountData.price > a'),
     new PriceElementPrecise('#market_buyorder_dialog_walletbalance_amount'),
     new PriceElementPrecise('#market_buy_commodity_order_total'),
+    new PriceElementPrecise('.Panel.Focusable > div > div > div > span'),
     new PriceElementRough('.StoreOriginalPrice'),
     new PriceElementRough('.StoreOriginalPrice + div'),
     new PriceElementRough('.Panel.Focusable span > div'),
