@@ -3,7 +3,7 @@
 // @namespace    Aneugene
 // @version      0.4.4
 // @description  Steam auto change values. Also show exchange value and different prices
-// @author       Aneugeneа
+// @author       Aneugene
 // @match        store.steampowered.com/*
 // @match        steamcommunity.com/*
 // @downloadURL  https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/main/exchange.js
