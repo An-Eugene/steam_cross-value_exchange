@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.3
+// @version      0.4.4
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugeneа
 // @match        store.steampowered.com/*
@@ -62,7 +62,8 @@ let app_settings = JSON.parse(`
 
 function main() {
   const steam_elements = [
-    new PriceElementPrecise('#header_wallet_balance'),
+    new MarketElementPrecise('#header_wallet_balance'),
+    new PriceOnHoldElementPrecise('#header_wallet_balance .tooltip'),
     new PriceElementPrecise('#marketWalletBalanceAmount'),
     new PriceElementPrecise('.accountData.price > a'),
     new PriceElementPrecise('#market_buyorder_dialog_walletbalance_amount'),
@@ -308,7 +309,11 @@ class MarketElementPrecise extends PriceElementPrecise {
   }
 
   _setContent(item, string) {
-    item.innerHTML = string + item.innerHTML.substring(item.innerHTML.indexOf('<br>'));
+    if (item.innerHTML.indexOf('<br>') > -1) {
+      item.innerHTML = string + item.innerHTML.substring(item.innerHTML.indexOf('<br>'));
+    } else {
+      item.innerHTML = string
+    }
   }
 }
 
@@ -365,6 +370,20 @@ class MarketActivityElementPrecise extends PriceElementPrecise {
   _setContent(item, string) {
     item.innerHTML = this._pre_element + ' ' + string;
   }
+}
+
+class PriceOnHoldElementPrecise extends PriceElementPrecise {
+  _getContent(item) {
+    let whole_string = item.innerHTML.split(":");
+    let price = whole_string[1].trim();
+    this._pre_element = whole_string[0] + ":";
+
+    return price.replace(' ', '');
+  }
+
+  _setContent(item, string) {
+    item.innerHTML = this._pre_element + ' ' + string;
+    }
 }
 
 
