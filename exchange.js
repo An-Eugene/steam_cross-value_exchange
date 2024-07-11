@@ -6,8 +6,8 @@
 // @author       Aneugene
 // @match        store.steampowered.com/*
 // @match        steamcommunity.com/*
-// @downloadURL  https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/main/exchange.js
-// @updateURL    https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/main/exchange.js
+// @downloadURL  https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/experimental/exchange.js
+// @updateURL    https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/experimental/exchange.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=steampowered.com
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
