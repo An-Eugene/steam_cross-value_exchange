@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.4
+// @version      0.4.4.1
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -10,55 +10,11 @@
 // @updateURL    https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/experimental/exchange.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=steampowered.com
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getValue
+// @grant        GM_setValue
 // ==/UserScript==
 
 // https://flagsapi.com/
-
-let app_settings = JSON.parse(`
-{
-  "exchange" : {
-    "bank_api_link" : "https://www.cbr-xml-daily.ru/daily_json.js",
-    "api_path" : {
-      "value" : ["Value"],
-      "nominal" : ["Nominal"]
-    },
-    "from" : {
-      "sign" : "₸",
-      "path" : ["Valute", "KZT"]
-    },
-    "to" : {
-      "sign" : "₽",
-      "steam_variation" : "руб."
-    }
-  },
-  "comparison" :
-  [
-    {
-      "cc" : "kz",
-      "path" : ["Valute", "KZT"],
-      "sign" : "₸"
-    },
-    {
-      "cc" : "ru",
-      "sign" : "₽"
-    },
-    {
-      "cc" : "eu",
-      "path" : ["Valute", "EUR"],
-      "sign" : "€"
-    },
-    {
-      "cc" : "tr",
-      "path" : ["Valute", "USD"],
-      "sign" : "$"
-    },
-    {
-      "cc" : "us",
-      "path" : ["Valute", "USD"],
-      "sign" : "$"
-    }
-  ]
-}`);
 
 function main() {
   const steam_elements = [
@@ -97,7 +53,7 @@ function main() {
   ];
 
   const css = new CSSImplementerCustom();
-  const exchange = new Exchanger(app_settings.exchange);
+  const exchange = new Exchanger(Settings.app_settings.exchange);
   exchange.init();
 
   const parser = new PriceReplacer(steam_elements, exchange);
@@ -107,7 +63,11 @@ function main() {
   exchange_viewer.placeHTMLBlock();
   css.append(exchange_viewer.css);
 
-  const price_comparison = new PriceComparison(exchange, app_settings.comparison);
+  Settings.placeHTMLBlock();
+  Settings.append_event_listeners(exchange_viewer.element);
+  css.append(Settings.css);
+
+  const price_comparison = new PriceComparison(exchange, Settings.app_settings.comparison);
   price_comparison.placeHTMLBlock();
   css.append(price_comparison.css);
 }
@@ -418,6 +378,7 @@ class ExchangeViewer extends HTMLBlock{
     this._exchange = exchange;
     //this._original_multiplier = this._exchange.nominal();
     this._element.className = "cross_value_exchange__exchangeviewer";
+    this._element.id = 'cve__exchangeviewer';
     this._query_selector = "#global_action_menu";
   }
 
@@ -431,6 +392,13 @@ class ExchangeViewer extends HTMLBlock{
       padding-left: 9px;
       padding-right: 9px;
       color: rgb(229, 228, 220);
+    }
+
+    .cross_value_exchange__exchangeviewer:hover{
+      background-color: #3d4450;
+      transition-property: background;
+      transition-duration: 250ms;
+      cursor:pointer;
     }`
   }
 
@@ -445,6 +413,10 @@ class ExchangeViewer extends HTMLBlock{
                               (this._exchange.nominal() * this._exchange.value()).toFixed(2) +
                               " " + this._exchange.to;
     parent_block.insertBefore(this._element, parent_block.firstChild);
+  }
+
+  get element() {
+    return this._element;
   }
 }
 
@@ -713,5 +685,123 @@ class ComparisonElement extends HTTPRequest {
   }
 
 }
+
+
+class Settings {
+  static app_settings = {}
+  static default_settings = JSON.parse(`
+    {
+      "exchange" : {
+        "bank_api_link" : "https://www.cbr-xml-daily.ru/daily_json.js",
+        "api_path" : {
+          "value" : ["Value"],
+          "nominal" : ["Nominal"]
+        },
+        "from" : {
+          "sign" : "₸",
+          "path" : ["Valute", "KZT"]
+        },
+        "to" : {
+          "sign" : "₽",
+          "steam_variation" : "руб."
+        }
+      },
+      "comparison" :
+      [
+        {
+          "cc" : "kz",
+          "path" : ["Valute", "KZT"],
+          "sign" : "₸"
+        },
+        {
+          "cc" : "ru",
+          "sign" : "₽"
+        },
+        {
+          "cc" : "eu",
+          "path" : ["Valute", "EUR"],
+          "sign" : "€"
+        },
+        {
+          "cc" : "tr",
+          "path" : ["Valute", "USD"],
+          "sign" : "$"
+        },
+        {
+          "cc" : "us",
+          "path" : ["Valute", "USD"],
+          "sign" : "$"
+        }
+      ]
+    }`);
+  static html_element;
+
+  static {
+    Settings.app_settings = GM_getValue('settings', null);
+    if (Settings.app_settings === null) {
+      Settings.app_settings = Settings.default_settings;
+      GM_setValue('settings', Settings.default_settings);
+    }
+  }
+
+  static placeHTMLBlock() {
+    Settings.html_element = document.createElement('div');
+    Settings.html_element.className = 'settings_lightbox';
+    Settings.html_element.id = 'cve__settings_lightbox';
+    Settings.html_element.style.display = 'none';
+    Settings.html_element.innerHTML = `
+      <div class="settings_close-button">X</div>
+      <div class="settings_popup"></div>`;
+    document.body.appendChild(Settings.html_element);
+    
+  }
+
+  static append_event_listeners(connected_button) {
+    Settings.html_element.addEventListener('click', (event) => {
+      if (event.target === Settings.html_element) {
+        Settings.html_element.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    });
+    connected_button.addEventListener('click', () => {
+      Settings.html_element.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    })
+  }
+
+  static get css() {
+    return `
+      .settings_lightbox {
+        position:fixed;
+        z-index:9999;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background-color: #00000070;
+        display:none;
+        align-items: center;
+        justify-content: center;
+        cursor:pointer;
+      }
+      .settings_close-button {
+        pointer-events: none;
+        user-select: none;
+        position: fixed;
+        top: 30px;
+        right: 30px;
+        font-size: 2rem;
+        color:white;
+      }
+      .settings_popup {
+        width: 800px;
+        height: 600px;
+        background-color: white;
+        cursor: unset;
+      }
+    `;
+  }
+}
+
 
 main();
