@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.4.1
+// @version      0.4.4.2
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -64,7 +64,7 @@ function main() {
   css.append(exchange_viewer.css);
 
   Settings.placeHTMLBlock();
-  Settings.append_event_listeners(exchange_viewer.element);
+  Settings.appendEventListeners(exchange_viewer.element);
   css.append(Settings.css);
 
   const price_comparison = new PriceComparison(exchange, Settings.app_settings.comparison);
@@ -737,54 +737,85 @@ class Settings {
   static html_element;
 
   static {
-    Settings.app_settings = GM_getValue('settings', null);
-    if (Settings.app_settings === null) {
-      Settings.app_settings = Settings.default_settings;
-      GM_setValue('settings', Settings.default_settings);
+    this.app_settings = GM_getValue('settings', null);
+    if (this.app_settings === null) {
+      this.app_settings = this.default_settings;
+      GM_setValue('settings', this.default_settings);
     }
   }
 
   static placeHTMLBlock() {
-    Settings.html_element = document.createElement('div');
-    Settings.html_element.className = 'settings_lightbox';
-    Settings.html_element.id = 'cve__settings_lightbox';
-    Settings.html_element.style.display = 'none';
-    Settings.html_element.innerHTML = `
-      <div class="settings_close-button">X</div>
-      <div class="settings_popup"></div>`;
-    document.body.appendChild(Settings.html_element);
+    let template_comparison = document.createElement('div');
+    template_comparison.className = 'cve__settings_comparison_item';
+    template_comparison.innerHTML = `<label>CC<input type="text" class="cc" value="ccc" /></label>
+                                     <label>Путь<input type="text" class="path" /></label>
+                                     <label>Знак<input type="text" class="sign" /></label>`;
+
+    this.html_element = document.createElement('div');
+    this.html_element.className = 'cve__settings_lightbox';
+    this.html_element.id = 'cve__settings_lightbox';
+    this.html_element.style.display = 'none';
+
+    let close_button = document.createElement('div');
+    close_button.className = 'cve__settings_close-button';
+    close_button.innerHTML = 'X';
+    this.html_element.append(close_button);
+    
+    let popup = document.createElement('div');
+    popup.className = 'cve__settings_popup';
+    popup.innerHTML += `<h1 class="cve__settings_header">Параметры cross-value exchange</h1>
+                        <div class="cve__settings_exchange">
+                          <label>Ссылка API<input text="text" class="bank_api" value="https://youtube.com/watch?v=dQw4w9WgXcQ" /></label>
+                          <div class="api_path">
+                            <label>Путь до курса<input type="text" class="value" /></label>
+                            <label>Путь до множителя курса<input type="text" class="nominal" /></label>
+                          </div>
+                          <div class="from">
+                            <label>Валютный знак<input type="text" class="sign" /></label>
+                            <label>Путь до валюты<input type="text" class="path" /></label>
+                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" /></label>
+                          </div>
+                          <div class="from">
+                            <label>Валютный знак<input type="text" class="sign" /></label>
+                            <label>Путь до валюты<input type="text" class="path" /></label>
+                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" /></label>
+                          </div>
+                        </div>
+                        <div class="delimiter"></div>`;
+    this.html_element.append(popup);                    
+    document.body.appendChild(this.html_element);
     
   }
 
-  static append_event_listeners(connected_button) {
-    Settings.html_element.addEventListener('click', (event) => {
-      if (event.target === Settings.html_element) {
-        Settings.html_element.style.display = 'none';
+  static appendEventListeners(connected_button) {
+    this.html_element.addEventListener('click', (event) => {
+      if (event.target === this.html_element) {
+        this.html_element.style.display = 'none';
         document.body.style.overflow = '';
       }
     });
     connected_button.addEventListener('click', () => {
-      Settings.html_element.style.display = 'flex';
+      this.html_element.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     })
   }
 
   static get css() {
     return `
-      .settings_lightbox {
+      .cve__settings_lightbox {
         position:fixed;
         z-index:9999;
         top:0;
         left:0;
         width:100%;
         height:100%;
-        background-color: #00000070;
+        background-color: rgba(0, 0, 0, 0.65);
         display:none;
         align-items: center;
         justify-content: center;
         cursor:pointer;
       }
-      .settings_close-button {
+      .cve__settings_close-button {
         pointer-events: none;
         user-select: none;
         position: fixed;
@@ -793,15 +824,41 @@ class Settings {
         font-size: 2rem;
         color:white;
       }
-      .settings_popup {
+      .cve__settings_popup {
         width: 800px;
         height: 600px;
-        background-color: white;
-        cursor: unset;
+        background-color: #1b2838;
+        cursor: default;
+        3px 3px 0px rgba( 255, 255, 255, 0.2);
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        padding: 20px;
+        gap: 35px;
       }
+      .cve__settings_popup input {
+        background-color: #316282;
+        border-radius: 3px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        box-shadow: 1px 1px 0px rgba( 255, 255, 255, 0.2);
+        color:white;
+        height: 27px;
+        padding: 0px 6px;
+      }
+      .cve__settings_exchange {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap: 20px;
+      }
+      .cve__settings_exchange .bank_api {width:100%;}
     `;
   }
 }
+
+
+main();
+
 
 
 main();
