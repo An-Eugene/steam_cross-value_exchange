@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.4.2
+// @version      0.4.4.3
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -744,13 +744,16 @@ class Settings {
     }
   }
 
-  static placeHTMLBlock() {
+  static _comparison_item(cc, path, sign) {
     let template_comparison = document.createElement('div');
     template_comparison.className = 'cve__settings_comparison_item';
-    template_comparison.innerHTML = `<label>CC<input type="text" class="cc" value="ccc" /></label>
-                                     <label>Путь<input type="text" class="path" /></label>
-                                     <label>Знак<input type="text" class="sign" /></label>`;
+    template_comparison.innerHTML = `<label>CC<input type="text" class="cc" value="`+ cc +`" /></label>
+                                     <label>Путь<input type="text" class="path" value="`+ path +`" /></label>
+                                     <label>Знак<input type="text" class="sign" value="`+ sign +`" /></label>`;
+    return template_comparison;
+  }
 
+  static placeHTMLBlock() {
     this.html_element = document.createElement('div');
     this.html_element.className = 'cve__settings_lightbox';
     this.html_element.id = 'cve__settings_lightbox';
@@ -765,23 +768,26 @@ class Settings {
     popup.className = 'cve__settings_popup';
     popup.innerHTML += `<h1 class="cve__settings_header">Параметры cross-value exchange</h1>
                         <div class="cve__settings_exchange">
-                          <label>Ссылка API<input text="text" class="bank_api" value="https://youtube.com/watch?v=dQw4w9WgXcQ" /></label>
+                          <label>Ссылка API<input text="text" class="bank_api" value="`+ (this.app_settings.exchange.bank_api_link ?? '') +`" /></label>
                           <div class="api_path">
-                            <label>Путь до курса<input type="text" class="value" /></label>
-                            <label>Путь до множителя курса<input type="text" class="nominal" /></label>
+                            <label>Путь до курса<input type="text" class="value" value="`+ (this.app_settings.exchange.api_path.value ?? '') +`" /></label>
+                            <label>Путь до множителя курса<input type="text" class="nominal" value="`+ (this.app_settings.exchange.api_path.nominal ?? '') +`" /></label>
                           </div>
                           <div class="from">
-                            <label>Валютный знак<input type="text" class="sign" /></label>
-                            <label>Путь до валюты<input type="text" class="path" /></label>
-                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" /></label>
-                          </div>
-                          <div class="from">
-                            <label>Валютный знак<input type="text" class="sign" /></label>
-                            <label>Путь до валюты<input type="text" class="path" /></label>
-                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" /></label>
+                            <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.from.sign ?? '') +`" /></label>
+                            <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.from.path ?? '') +`" /></label>
+                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" value="`+ (this.app_settings.exchange.from.steam_variation ?? '') +`" /></label>
+                          </div> 
+                          <div class="to">
+                            <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.to.sign ?? '') +`" /></label>
+                            <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.to.path ?? '') +`" /></label>
+                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" value="`+ (this.app_settings.exchange.to.steam_variation ?? '') +`" /></label>
                           </div>
                         </div>
                         <div class="delimiter"></div>`;
+    this.app_settings.comparison.forEach(item => {
+      popup.append(this._comparison_item(item.cc ?? '', item.path ?? '', item.sign ?? ''));
+    });
     this.html_element.append(popup);                    
     document.body.appendChild(this.html_element);
     
@@ -826,7 +832,7 @@ class Settings {
       }
       .cve__settings_popup {
         width: 800px;
-        height: 600px;
+        max-height: 600px;
         background-color: #1b2838;
         cursor: default;
         3px 3px 0px rgba( 255, 255, 255, 0.2);
@@ -835,6 +841,7 @@ class Settings {
         align-items:center;
         padding: 20px;
         gap: 35px;
+        overflow-y: auto;
       }
       .cve__settings_popup input {
         background-color: #316282;
@@ -855,10 +862,6 @@ class Settings {
     `;
   }
 }
-
-
-main();
-
 
 
 main();
