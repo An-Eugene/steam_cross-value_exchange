@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.4.3
+// @version      0.4.4.4
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -15,6 +15,7 @@
 // ==/UserScript==
 
 // https://flagsapi.com/
+
 
 function main() {
   const steam_elements = [
@@ -617,7 +618,7 @@ class PriceComparison extends HTMLBlock{
 
   _flag_element(item) {
     let flag_link = 'https://flagcdn.com/h40/' + item + '.webp';
-    return '<img class="comparison_element__flag" src="' + flag_link + '" alt="' + item + '">';
+    return '<img class="comparison_element__flag" src="' + flag_link + '" alt="' + item + '" title="' + item + '">';
   }
 }
 
@@ -747,7 +748,12 @@ class Settings {
   static _comparison_item(cc, path, sign) {
     let template_comparison = document.createElement('div');
     template_comparison.className = 'cve__settings_comparison_item';
-    template_comparison.innerHTML = `<label>CC<input type="text" class="cc" value="`+ cc +`" /></label>
+    template_comparison.innerHTML = `<div class="cve__comparison_item_buttons">
+                                       <div class="item item_delete">x</div>
+                                       <div class="item item_moveup">⬆</div>
+                                       <div class="item item_movedown">⬇</div>
+                                     </div>
+                                     <label>CC<input type="text" class="cc" value="`+ cc +`" /></label>
                                      <label>Путь<input type="text" class="path" value="`+ path +`" /></label>
                                      <label>Знак<input type="text" class="sign" value="`+ sign +`" /></label>`;
     return template_comparison;
@@ -764,15 +770,11 @@ class Settings {
     close_button.innerHTML = 'X';
     this.html_element.append(close_button);
     
-    let popup = document.createElement('div');
-    popup.className = 'cve__settings_popup';
-    popup.innerHTML += `<h1 class="cve__settings_header">Параметры cross-value exchange</h1>
+    let popup_inner = document.createElement('div');
+    popup_inner.className = 'cve__settings_popup_inner';
+    popup_inner.innerHTML += `<h1 class="cve__settings_header">Параметры cross-value exchange</h1>
                         <div class="cve__settings_exchange">
                           <label>Ссылка API<input text="text" class="bank_api" value="`+ (this.app_settings.exchange.bank_api_link ?? '') +`" /></label>
-                          <div class="api_path">
-                            <label>Путь до курса<input type="text" class="value" value="`+ (this.app_settings.exchange.api_path.value ?? '') +`" /></label>
-                            <label>Путь до множителя курса<input type="text" class="nominal" value="`+ (this.app_settings.exchange.api_path.nominal ?? '') +`" /></label>
-                          </div>
                           <div class="from">
                             <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.from.sign ?? '') +`" /></label>
                             <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.from.path ?? '') +`" /></label>
@@ -783,11 +785,25 @@ class Settings {
                             <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.to.path ?? '') +`" /></label>
                             <label>Обозначение валюты Steam<input type="text" class="steam_variation" value="`+ (this.app_settings.exchange.to.steam_variation ?? '') +`" /></label>
                           </div>
+                          <div class="api_path">
+                            <label>Путь до курса<input type="text" class="value" value="`+ (this.app_settings.exchange.api_path.value ?? '') +`" /></label>
+                            <label>Путь до множителя курса<input type="text" class="nominal" value="`+ (this.app_settings.exchange.api_path.nominal ?? '') +`" /></label>
+                          </div>
                         </div>
                         <div class="delimiter"></div>`;
+    let comparison_items = document.createElement('div');
+    comparison_items.className = 'cve__settings_comparison_items';
     this.app_settings.comparison.forEach(item => {
-      popup.append(this._comparison_item(item.cc ?? '', item.path ?? '', item.sign ?? ''));
+      comparison_items.append(this._comparison_item(item.cc ?? '', item.path ?? '', item.sign ?? ''));
     });
+    comparison_items.innerHTML += this._popup_appendbutton;
+
+    popup_inner.append(comparison_items);
+
+    let popup = document.createElement('div');
+    popup.className = 'cve__settings_popup';
+    popup.append(popup_inner);
+    popup.innerHTML += this._popup_buttons;
     this.html_element.append(popup);                    
     document.body.appendChild(this.html_element);
     
@@ -804,6 +820,20 @@ class Settings {
       this.html_element.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     })
+  }
+
+  static get _popup_buttons() {
+    return `<div class="cve__popup_buttons">
+              <div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_reset"><span>СБРОС</span></div>
+              <div class="cve__popup_buttons_right">
+                <div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_cancel"><span>Отмена</span></div>
+                <div class="btn_green_steamui btn_medium cve__button" id="cve__settings_apply"><span>Применить</span></div>
+              </div>
+            </div>`;
+  }
+
+  static get _popup_appendbutton() {
+    return `<div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_comparison_append"><span>Добавить страну</span></div>`;
   }
 
   static get css() {
@@ -832,9 +862,13 @@ class Settings {
       }
       .cve__settings_popup {
         width: 800px;
-        max-height: 600px;
         background-color: #1b2838;
         cursor: default;
+      }
+      .cve__settings_popup_inner {
+        width: 100%;
+        box-sizing:border-box;
+        max-height: 600px;
         3px 3px 0px rgba( 255, 255, 255, 0.2);
         display:flex;
         flex-direction:column;
@@ -843,7 +877,35 @@ class Settings {
         gap: 35px;
         overflow-y: auto;
       }
-      .cve__settings_popup input {
+      .cve__popup_buttons {
+        width: 100%;
+        box-sizing:border-box;
+        padding: 16px;
+        display:flex;
+        flex-direction:row;
+        justify-content: space-between;
+      }
+      .cve__popup_buttons_right {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: 7px;
+      }
+
+      .cve__button {
+        cursor: pointer;
+        user-select: none;
+      }
+      #cve__settings_reset {
+        background-color: rgba(245, 103, 103, 0.1);
+        color: #f56767!important;
+      }
+      #cve__settings_reset:hover {
+        background: linear-gradient( -60deg, #9b4141 5%,#f56767 95%);
+        color: white!important;
+      }
+
+      .cve__settings_popup_inner input {
         background-color: #316282;
         border-radius: 3px;
         border: 1px solid rgba(0, 0, 0, 0.3);
@@ -851,6 +913,7 @@ class Settings {
         color:white;
         height: 27px;
         padding: 0px 6px;
+        margin-left: 10px;
       }
       .cve__settings_exchange {
         display:flex;
@@ -858,7 +921,42 @@ class Settings {
         align-items:center;
         gap: 20px;
       }
-      .cve__settings_exchange .bank_api {width:100%;}
+      .cve__settings_comparison_item {
+        display:flex;
+        gap: 15px;
+        padding-bottom:5px;
+      }
+      .cve__comparison_item_buttons {
+        display:flex;
+        align-items:center;
+        gap: 6px;
+      }
+      .cve__comparison_item_buttons .item {
+        height: 1em;
+        aspect-ratio: 1 / 1;
+        padding: 3px 5px 5px 5px;
+        text-align: center;
+        font-weight:bold;
+        border-radius: 1000px;
+        cursor:pointer;
+        user-select: none;
+        &.item_delete {
+          background-color: #6b2922;
+          color: #ee112b;
+        }
+        &.item_moveup, &.item_movedown {
+          background-color: #4c6b22;
+          color: #BEEE11;
+        }
+      }
+      .cve__settings_comparison_item .cc, .cve__settings_comparison_item .sign, .cve__settings_exchange .sign, .cve__settings_exchange .steam_variation {
+        width: 2em;
+      }
+
+      .cve__settings_comparison_items .cve__settings_comparison_item:first-of-class .item_moveup, .cve__settings_comparison_items .cve__settings_comparison_item:last-of-class  .item_movedown {
+        background-color: grey;
+        pointer-events: none;
+      }
     `;
   }
 }
