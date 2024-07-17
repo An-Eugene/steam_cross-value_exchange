@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.4.4
+// @version      0.4.4.5
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -736,6 +736,7 @@ class Settings {
       ]
     }`);
   static html_element;
+  static append_button = undefined;
 
   static {
     this.app_settings = GM_getValue('settings', null);
@@ -743,6 +744,10 @@ class Settings {
       this.app_settings = this.default_settings;
       GM_setValue('settings', this.default_settings);
     }
+  }
+
+  static placeHTMLBlock() {
+    this._placeHTMLBlock();
   }
 
   static _comparison_item(cc, path, sign) {
@@ -759,7 +764,7 @@ class Settings {
     return template_comparison;
   }
 
-  static placeHTMLBlock() {
+  static _placeHTMLBlock() {
     this.html_element = document.createElement('div');
     this.html_element.className = 'cve__settings_lightbox';
     this.html_element.id = 'cve__settings_lightbox';
@@ -780,6 +785,7 @@ class Settings {
                             <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.from.path ?? '') +`" /></label>
                             <label>Обозначение валюты Steam<input type="text" class="steam_variation" value="`+ (this.app_settings.exchange.from.steam_variation ?? '') +`" /></label>
                           </div> 
+                          <span>=</span>
                           <div class="to">
                             <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.to.sign ?? '') +`" /></label>
                             <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.to.path ?? '') +`" /></label>
@@ -796,7 +802,7 @@ class Settings {
     this.app_settings.comparison.forEach(item => {
       comparison_items.append(this._comparison_item(item.cc ?? '', item.path ?? '', item.sign ?? ''));
     });
-    comparison_items.innerHTML += this._popup_appendbutton;
+    comparison_items.append(this._popup_appendbutton);
 
     popup_inner.append(comparison_items);
 
@@ -816,10 +822,41 @@ class Settings {
         document.body.style.overflow = '';
       }
     });
+
     connected_button.addEventListener('click', () => {
       this.html_element.style.display = 'flex';
       document.body.style.overflow = 'hidden';
-    })
+    });
+
+    const append_button = document.getElementById('cve__settings_comparison_append')
+    append_button.addEventListener('click', () => {
+      const comparison_item = this._comparison_item('', '', '');
+      document.querySelector('.cve__settings_comparison_items').insertBefore(comparison_item, append_button);
+      this._addEventListenerToComparison(comparison_item);
+    });
+
+    const comparison_elements = document.querySelectorAll('.cve__settings_comparison_item');
+    comparison_elements.forEach((item) => {
+      this._addEventListenerToComparison(item);
+    });
+  }
+
+  static _addEventListenerToComparison(item) {
+    item.querySelector('.item_delete').addEventListener('click', () => {
+        item.remove();
+      });
+    item.querySelector('.item_moveup').addEventListener('click', () => {
+      const prev_sibling = item.previousElementSibling;
+      if (prev_sibling) {
+        item.parentNode.insertBefore(item, prev_sibling);
+      }
+    });
+    item.querySelector('.item_movedown').addEventListener('click', () => {
+      const next_sibling = item.nextElementSibling;
+      if (next_sibling && next_sibling.id !== 'cve__settings_comparison_append') {
+        item.parentNode.insertBefore(next_sibling, item);
+      }
+    });
   }
 
   static get _popup_buttons() {
@@ -833,10 +870,17 @@ class Settings {
   }
 
   static get _popup_appendbutton() {
-    return `<div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_comparison_append"><span>Добавить страну</span></div>`;
+    this.append_button = document.createElement('a');
+    this.append_button.className = 'btnv6_blue_hoverfade btn_medium cve__button';
+    this.append_button.setAttribute('id', 'cve__settings_comparison_append');
+    this.append_button.style.marginTop = '5px';
+    this.append_button.innerHTML = '<span>Добавить страну</span>';
+    return this.append_button;
   }
 
   static get css() {
+
+
     return `
       .cve__settings_lightbox {
         position:fixed;
@@ -868,7 +912,7 @@ class Settings {
       .cve__settings_popup_inner {
         width: 100%;
         box-sizing:border-box;
-        max-height: 600px;
+        height: 600px;
         3px 3px 0px rgba( 255, 255, 255, 0.2);
         display:flex;
         flex-direction:column;
@@ -878,6 +922,7 @@ class Settings {
         overflow-y: auto;
       }
       .cve__popup_buttons {
+        background-color: #ffffff10;
         width: 100%;
         box-sizing:border-box;
         padding: 16px;
@@ -904,6 +949,10 @@ class Settings {
         background: linear-gradient( -60deg, #9b4141 5%,#f56767 95%);
         color: white!important;
       }
+      #cve__settings_apply span {
+        padding-left: 25px;
+        padding-right: 25px;
+      }
 
       .cve__settings_popup_inner input {
         background-color: #316282;
@@ -924,7 +973,11 @@ class Settings {
       .cve__settings_comparison_item {
         display:flex;
         gap: 15px;
-        padding-bottom:5px;
+        padding: 3px 7px;
+      }
+      .cve__settings_comparison_item:nth-child(2n) {
+        background-color: #ffffff10;
+        border-radius: 3px;
       }
       .cve__comparison_item_buttons {
         display:flex;
@@ -953,7 +1006,7 @@ class Settings {
         width: 2em;
       }
 
-      .cve__settings_comparison_items .cve__settings_comparison_item:first-of-class .item_moveup, .cve__settings_comparison_items .cve__settings_comparison_item:last-of-class  .item_movedown {
+      .cve__settings_comparison_items > div:first-of-type .item_moveup, .cve__settings_comparison_items > div:last-of-type  .item_movedown {
         background-color: grey;
         pointer-events: none;
       }
