@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.4.4
+// @version      0.5.0
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -10,55 +10,12 @@
 // @updateURL    https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/main/exchange.js
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=steampowered.com
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getValue
+// @grant        GM_setValue
 // ==/UserScript==
 
 // https://flagsapi.com/
 
-let app_settings = JSON.parse(`
-{
-  "exchange" : {
-    "bank_api_link" : "https://www.cbr-xml-daily.ru/daily_json.js",
-    "api_path" : {
-      "value" : ["Value"],
-      "nominal" : ["Nominal"]
-    },
-    "from" : {
-      "sign" : "₸",
-      "path" : ["Valute", "KZT"]
-    },
-    "to" : {
-      "sign" : "₽",
-      "steam_variation" : "руб."
-    }
-  },
-  "comparison" :
-  [
-    {
-      "cc" : "kz",
-      "path" : ["Valute", "KZT"],
-      "sign" : "₸"
-    },
-    {
-      "cc" : "ru",
-      "sign" : "₽"
-    },
-    {
-      "cc" : "eu",
-      "path" : ["Valute", "EUR"],
-      "sign" : "€"
-    },
-    {
-      "cc" : "tr",
-      "path" : ["Valute", "USD"],
-      "sign" : "$"
-    },
-    {
-      "cc" : "us",
-      "path" : ["Valute", "USD"],
-      "sign" : "$"
-    }
-  ]
-}`);
 
 function main() {
   const steam_elements = [
@@ -97,7 +54,7 @@ function main() {
   ];
 
   const css = new CSSImplementerCustom();
-  const exchange = new Exchanger(app_settings.exchange);
+  const exchange = new Exchanger(Settings.app_settings.exchange);
   exchange.init();
 
   const parser = new PriceReplacer(steam_elements, exchange);
@@ -107,7 +64,11 @@ function main() {
   exchange_viewer.placeHTMLBlock();
   css.append(exchange_viewer.css);
 
-  const price_comparison = new PriceComparison(exchange, app_settings.comparison);
+  Settings.placeHTMLBlock();
+  Settings.appendEventListeners(exchange_viewer.element);
+  css.append(Settings.css);
+
+  const price_comparison = new PriceComparison(exchange, Settings.app_settings.comparison);
   price_comparison.placeHTMLBlock();
   css.append(price_comparison.css);
 }
@@ -418,6 +379,7 @@ class ExchangeViewer extends HTMLBlock{
     this._exchange = exchange;
     //this._original_multiplier = this._exchange.nominal();
     this._element.className = "cross_value_exchange__exchangeviewer";
+    this._element.id = 'cve__exchangeviewer';
     this._query_selector = "#global_action_menu";
   }
 
@@ -431,6 +393,13 @@ class ExchangeViewer extends HTMLBlock{
       padding-left: 9px;
       padding-right: 9px;
       color: rgb(229, 228, 220);
+    }
+
+    .cross_value_exchange__exchangeviewer:hover{
+      background-color: #3d4450;
+      transition-property: background;
+      transition-duration: 250ms;
+      cursor:pointer;
     }`
   }
 
@@ -445,6 +414,10 @@ class ExchangeViewer extends HTMLBlock{
                               (this._exchange.nominal() * this._exchange.value()).toFixed(2) +
                               " " + this._exchange.to;
     parent_block.insertBefore(this._element, parent_block.firstChild);
+  }
+
+  get element() {
+    return this._element;
   }
 }
 
@@ -645,7 +618,7 @@ class PriceComparison extends HTMLBlock{
 
   _flag_element(item) {
     let flag_link = 'https://flagcdn.com/h40/' + item + '.webp';
-    return '<img class="comparison_element__flag" src="' + flag_link + '" alt="' + item + '">';
+    return '<img class="comparison_element__flag" src="' + flag_link + '" alt="' + item + '" title="' + item + '">';
   }
 }
 
@@ -660,7 +633,9 @@ class ComparisonElement extends HTTPRequest {
     super();
     this._cc = cc;
     this._link = this._api_link();
-    this._path = path;
+    if (!(Array.isArray(path) && path.length === 1 && path[0] === '')) {
+      this._path = path;
+    }
     this._sign = sign;
   }
 
@@ -713,5 +688,394 @@ class ComparisonElement extends HTTPRequest {
   }
 
 }
+
+
+class Settings {
+  static app_settings = {}
+  static default_settings = JSON.parse(`
+    {
+      "exchange" : {
+        "bank_api_link" : "https://www.cbr-xml-daily.ru/daily_json.js",
+        "api_path" : {
+          "value" : ["Value"],
+          "nominal" : ["Nominal"]
+        },
+        "from" : {
+          "sign" : "₸",
+          "path" : ["Valute", "KZT"]
+        },
+        "to" : {
+          "sign" : "₽",
+          "steam_variation" : "руб."
+        }
+      },
+      "comparison" :
+      [
+        {
+          "cc" : "kz",
+          "path" : ["Valute", "KZT"],
+          "sign" : "₸"
+        },
+        {
+          "cc" : "ru",
+          "sign" : "₽"
+        },
+        {
+          "cc" : "eu",
+          "path" : ["Valute", "EUR"],
+          "sign" : "€"
+        },
+        {
+          "cc" : "tr",
+          "path" : ["Valute", "USD"],
+          "sign" : "$"
+        },
+        {
+          "cc" : "us",
+          "path" : ["Valute", "USD"],
+          "sign" : "$"
+        }
+      ]
+    }`);
+  static html_element;
+  static append_button = undefined;
+
+  static {
+    let app_settings_string = GM_getValue('settings', null);
+    if (app_settings_string === null) {
+      this.app_settings = JSON.parse(JSON.stringify(this.default_settings));
+      GM_setValue('settings', JSON.stringify(this.default_settings));
+    } else {
+      this.app_settings = JSON.parse(app_settings_string);
+    }
+  }
+
+  static placeHTMLBlock() {
+    this._placeHTMLBlock();
+  }
+
+  static _comparison_item(cc, path, sign) {
+    let template_comparison = document.createElement('div');
+    template_comparison.className = 'cve__settings_comparison_item';
+    template_comparison.innerHTML = `<div class="cve__comparison_item_buttons">
+                                       <div class="item item_delete">x</div>
+                                       <div class="item item_moveup">⬆</div>
+                                       <div class="item item_movedown">⬇</div>
+                                     </div>
+                                     <label>CC<input type="text" class="cc" value="`+ cc +`" /></label>
+                                     <label>Путь<input type="text" class="path" value="`+ path +`" /></label>
+                                     <label>Знак<input type="text" class="sign" value="`+ sign +`" /></label>`;
+    return template_comparison;
+  }
+
+  static _placeHTMLBlock() {
+    this.html_element = document.createElement('div');
+    this.html_element.className = 'cve__settings_lightbox';
+    this.html_element.id = 'cve__settings_lightbox';
+    this.html_element.style.display = 'none';
+
+    let close_button = document.createElement('div');
+    close_button.className = 'cve__settings_close-button';
+    close_button.innerHTML = 'X';
+    this.html_element.append(close_button);
+    
+    let popup_inner = this._createPopupInner();
+
+    let popup = document.createElement('div');
+    popup.className = 'cve__settings_popup';
+    popup.append(popup_inner);
+    popup.innerHTML += this._popup_buttons;
+    this.html_element.append(popup);                    
+    document.body.appendChild(this.html_element);
+    this._addEventListenersToInner();
+    
+  }
+
+  static appendEventListeners(connected_button) {
+    this.html_element.addEventListener('click', (event) => {
+      if (event.target === this.html_element) {
+        this.html_element.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    });
+
+    connected_button.addEventListener('click', () => {
+      this.html_element.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    });
+
+    const reset_button = document.querySelector('#cve__settings_reset');
+    reset_button.addEventListener('click', () => {
+      if (confirm('Вы уверены? Это действие необратимо вернёт все ваши настройки к виду по умолчанию!')) {
+        this.app_settings = JSON.parse(JSON.stringify(this.default_settings));
+        document.querySelector('.cve__settings_popup_inner').innerHTML = this._createPopupInner().innerHTML;
+        this._addEventListenersToInner();
+      }
+    });
+
+    const cancel_button = document.querySelector('#cve__settings_cancel');
+    cancel_button.addEventListener('click', () => {
+      if (confirm('Вы уверены?')) {
+        document.querySelector('.cve__settings_popup_inner').innerHTML = this._createPopupInner().innerHTML;
+        this._addEventListenersToInner();
+      }
+    });
+    const apply_button = document.querySelector('#cve__settings_apply');
+    apply_button.addEventListener('click', () => {
+      this._saveSettingsFromForm(document.querySelector('.cve__settings_popup_inner'));
+      alert("Сохранено");
+    })
+  }
+
+  static _addEventListenersToInner() {
+    const append_button = document.getElementById('cve__settings_comparison_append')
+    append_button.addEventListener('click', () => {
+      const comparison_item = this._comparison_item('', '', '');
+      document.querySelector('.cve__settings_comparison_items').insertBefore(comparison_item, append_button);
+      this._addEventListenerToComparison(comparison_item);
+    });
+
+    const comparison_elements = document.querySelectorAll('.cve__settings_comparison_item');
+    comparison_elements.forEach((item) => {
+      this._addEventListenerToComparison(item);
+    });
+  }
+
+  static _addEventListenerToComparison(item) {
+    item.querySelector('.item_delete').addEventListener('click', () => {
+        item.remove();
+      });
+    item.querySelector('.item_moveup').addEventListener('click', () => {
+      const prev_sibling = item.previousElementSibling;
+      if (prev_sibling) {
+        item.parentNode.insertBefore(item, prev_sibling);
+      }
+    });
+    item.querySelector('.item_movedown').addEventListener('click', () => {
+      const next_sibling = item.nextElementSibling;
+      if (next_sibling && next_sibling.id !== 'cve__settings_comparison_append') {
+        item.parentNode.insertBefore(next_sibling, item);
+      }
+    });
+  }
+
+  static _createPopupInner() {
+    let popup_inner = document.createElement('div');
+    popup_inner.className = 'cve__settings_popup_inner';
+    popup_inner.innerHTML += `<h1 class="cve__settings_header">Параметры cross-value exchange</h1>
+                        <div class="cve__settings_exchange">
+                          <label>Ссылка API<input disabled text="text" class="bank_api" value="`+ (this.app_settings.exchange.bank_api_link ?? '') +`" /></label>
+                          <div class="from">
+                            <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.from.sign ?? '') +`" /></label>
+                            <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.from.path ?? '') +`" /></label>
+                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" value="`+ (this.app_settings.exchange.from.steam_variation ?? '') +`" /></label>
+                          </div> 
+                          <span>=</span>
+                          <div class="to">
+                            <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.to.sign ?? '') +`" /></label>
+                            <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.to.path ?? '') +`" /></label>
+                            <label>Обозначение валюты Steam<input type="text" class="steam_variation" value="`+ (this.app_settings.exchange.to.steam_variation ?? '') +`" /></label>
+                          </div>
+                          <div class="api_path">
+                            <label>Путь до курса<input type="text" class="value" value="`+ (this.app_settings.exchange.api_path.value ?? '') +`" /></label>
+                            <label>Путь до множителя курса<input type="text" class="nominal" value="`+ (this.app_settings.exchange.api_path.nominal ?? '') +`" /></label>
+                          </div>
+                        </div>
+                        <div class="delimiter"></div>`;
+    let comparison_items = document.createElement('div');
+    comparison_items.className = 'cve__settings_comparison_items';
+    this.app_settings.comparison.forEach(item => {
+      comparison_items.append(this._comparison_item(item.cc ?? '', item.path ?? '', item.sign ?? ''));
+    });
+    comparison_items.append(this._popup_appendbutton);
+
+    popup_inner.append(comparison_items);
+    return popup_inner;
+  }
+
+  static get _popup_buttons() {
+    return `<div class="cve__popup_buttons">
+              <div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_reset"><span>СБРОС</span></div>
+              <div class="cve__popup_buttons_right">
+                <div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_cancel"><span>Отмена</span></div>
+                <div class="btn_green_steamui btn_medium cve__button" id="cve__settings_apply"><span>Применить</span></div>
+              </div>
+            </div>`;
+  }
+
+  static get _popup_appendbutton() {
+    this.append_button = document.createElement('a');
+    this.append_button.className = 'btnv6_blue_hoverfade btn_medium cve__button';
+    this.append_button.setAttribute('id', 'cve__settings_comparison_append');
+    this.append_button.style.marginTop = '5px';
+    this.append_button.innerHTML = '<span>Добавить страну</span>';
+    return this.append_button;
+  }
+
+  static _saveSettingsFromForm(element) {
+    // this.app_settings.exchange.bank_api_link = element.querySelector('.bank_api').value;
+    this.app_settings.exchange.api_path.value = element.querySelector('.api_path .value').value.split(',');
+    this.app_settings.exchange.api_path.nominal = element.querySelector('.api_path .nominal').value.split(',');
+
+    this.app_settings.exchange.from.sign = element.querySelector('.from .sign').value;
+    this.app_settings.exchange.from.path = element.querySelector('.from .path').value.split(',');
+    this.app_settings.exchange.from.steam_variation = element.querySelector('.from .steam_variation').value;
+
+    this.app_settings.exchange.to.sign = element.querySelector('.to .sign').value;
+    this.app_settings.exchange.to.path = element.querySelector('.to .path').value.split(',');
+    this.app_settings.exchange.to.steam_variation = element.querySelector('.to .steam_variation').value;
+
+    this.app_settings.comparison = [];
+    element.querySelectorAll('.cve__settings_comparison_item').forEach((item) => {
+      const cc = item.querySelector('.cc').value;
+      const path_input = item.querySelector('.path').value;
+      let path = '';
+      if (path_input) {
+        path = item.querySelector('.path').value.split(',');
+      }
+      const sign = item.querySelector('.sign').value;
+
+      this.app_settings.comparison.push({cc, path, sign});
+    });
+
+    GM_setValue('settings', JSON.stringify(this.app_settings));
+  }
+
+  static get css() {
+
+
+    return `
+      .cve__settings_lightbox {
+        position:fixed;
+        z-index:9999;
+        top:0;
+        left:0;
+        width:100%;
+        height:100%;
+        background-color: rgba(0, 0, 0, 0.65);
+        display:none;
+        align-items: center;
+        justify-content: center;
+        cursor:pointer;
+      }
+      .cve__settings_close-button {
+        pointer-events: none;
+        user-select: none;
+        position: fixed;
+        top: 30px;
+        right: 30px;
+        font-size: 2rem;
+        color:white;
+      }
+      .cve__settings_popup {
+        width: 800px;
+        background-color: #1b2838;
+        cursor: default;
+      }
+      .cve__settings_popup_inner {
+        width: 100%;
+        box-sizing:border-box;
+        height: 600px;
+        3px 3px 0px rgba( 255, 255, 255, 0.2);
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        padding: 20px;
+        gap: 35px;
+        overflow-y: auto;
+      }
+      .cve__popup_buttons {
+        background-color: #ffffff10;
+        width: 100%;
+        box-sizing:border-box;
+        padding: 16px;
+        display:flex;
+        flex-direction:row;
+        justify-content: space-between;
+      }
+      .cve__popup_buttons_right {
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-end;
+        gap: 7px;
+      }
+
+      .cve__button {
+        cursor: pointer;
+        user-select: none;
+      }
+      #cve__settings_reset {
+        background-color: rgba(245, 103, 103, 0.1);
+        color: #f56767!important;
+      }
+      #cve__settings_reset:hover {
+        background: linear-gradient( -60deg, #9b4141 5%,#f56767 95%);
+        color: white!important;
+      }
+      #cve__settings_apply span {
+        padding-left: 25px;
+        padding-right: 25px;
+      }
+
+      .cve__settings_popup_inner input {
+        background-color: #316282;
+        border-radius: 3px;
+        border: 1px solid rgba(0, 0, 0, 0.3);
+        box-shadow: 1px 1px 0px rgba( 255, 255, 255, 0.2);
+        color:white;
+        height: 27px;
+        padding: 0px 6px;
+        margin-left: 10px;
+      }
+      .cve__settings_exchange {
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        gap: 20px;
+      }
+      .cve__settings_comparison_item {
+        display:flex;
+        gap: 15px;
+        padding: 3px 7px;
+      }
+      .cve__settings_comparison_item:nth-child(2n) {
+        background-color: #ffffff10;
+        border-radius: 3px;
+      }
+      .cve__comparison_item_buttons {
+        display:flex;
+        align-items:center;
+        gap: 6px;
+      }
+      .cve__comparison_item_buttons .item {
+        height: 1em;
+        aspect-ratio: 1 / 1;
+        padding: 3px 5px 5px 5px;
+        text-align: center;
+        font-weight:bold;
+        border-radius: 1000px;
+        cursor:pointer;
+        user-select: none;
+        &.item_delete {
+          background-color: #6b2922;
+          color: #ee112b;
+        }
+        &.item_moveup, &.item_movedown {
+          background-color: #4c6b22;
+          color: #BEEE11;
+        }
+      }
+      .cve__settings_comparison_item .cc, .cve__settings_comparison_item .sign, .cve__settings_exchange .sign, .cve__settings_exchange .steam_variation {
+        width: 2em;
+      }
+
+      .cve__settings_comparison_items > div:first-of-type .item_moveup, .cve__settings_comparison_items > div:last-of-type  .item_movedown {
+        background-color: grey;
+        pointer-events: none;
+      }
+    `;
+  }
+}
+
 
 main();
