@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.0
+// @version      0.5.1
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -26,6 +26,8 @@ function main() {
     new PriceElementPrecise('#market_buyorder_dialog_walletbalance_amount'),
     new PriceElementPrecise('#market_buy_commodity_order_total'),
     new PriceElementPrecise('.Panel.Focusable > div > div > div > span'),
+    new SubscriptionElementPrecise('.game_area_purchase_game_dropdown_subscription .game_area_purchase_game_dropdown_selection span'),
+    new SubscriptionElementPrecise('.game_area_purchase_game_dropdown_subscription .game_area_purchase_game_dropdown_menu_container td.game_area_purchase_game_dropdown_menu_item_text'),
     new PriceElementRough('.StoreOriginalPrice'),
     new PriceElementRough('.StoreOriginalPrice + div'),
     new PriceElementRough('.Panel.Focusable span > div'),
@@ -292,6 +294,23 @@ class MarketGraphTooltipPrecise extends PriceElementPrecise {
     this._pre_element = whole_string[0] + '<br>';
     let price = whole_string[1];
     this._post_element = '<br>' + whole_string[2];
+
+    return price;
+  }
+
+  _setContent(item, string) {
+    item.innerHTML = this._pre_element + string + this._post_element;
+  }
+}
+
+
+class SubscriptionElementPrecise extends PriceElementPrecise {
+  _getContent(item) {
+    let whole_string = item.innerHTML.split('/');
+    this._post_element = ' /' + whole_string[1];
+    let [pre_element, price] = whole_string[0].match(/^[^\d]*(?=\d)|\d.*/g);
+    this._pre_element = (pre_element ?? '');
+    price = price.trim().replace(' ', '');
 
     return price;
   }
