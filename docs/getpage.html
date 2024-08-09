@@ -9,7 +9,7 @@
 </head>
 <body>
     <script>
-        fetch('https://store.steampowered.com/app/668580/Atomic_Heart/')
+        fetch('https://cors-anywhere.herokuapp.com/https://store.steampowered.com/app/668580/Atomic_Heart/')
             .then(response => response.text())
             .then(html => document.documentElement.innerHTML = html);
     </script>
