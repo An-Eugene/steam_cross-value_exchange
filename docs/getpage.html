@@ -9,7 +9,8 @@
 </head>
 <body>
     <script>
-        fetch('https://cors-anywhere.herokuapp.com/https://store.steampowered.com/app/668580/Atomic_Heart/', {headers: {'Cookie': 'birthtime=218235601'}})
+        document.cookie = 'birthtime=218235601';
+        fetch('https://cors-anywhere.herokuapp.com/https://store.steampowered.com/app/668580/Atomic_Heart/', {credentials: 'same-origin'})
             .then(response => response.text())
             .then(html => document.documentElement.innerHTML = html);
     </script>
