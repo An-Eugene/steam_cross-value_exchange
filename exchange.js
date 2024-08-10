@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.1
+// @version      0.5.2
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -307,6 +307,7 @@ class MarketGraphTooltipPrecise extends PriceElementPrecise {
 class SubscriptionElementPrecise extends PriceElementPrecise {
   _getContent(item) {
     let whole_string = item.innerHTML.split('/');
+    if (whole_string.length === 1) {return null;}
     this._post_element = ' /' + whole_string[1];
     let [pre_element, price] = whole_string[0].match(/^[^\d]*(?=\d)|\d.*/g);
     this._pre_element = (pre_element ?? '');
