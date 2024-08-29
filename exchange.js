@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.2
+// @version      0.5.3
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -514,7 +514,12 @@ class PriceComparison extends HTMLBlock{
       new_element.init();
       this._other_items.push(new_element);
     }
-    this._query_selector = '#game_area_purchase';
+    if (document.querySelector('#error_box')) {
+        this._query_selector = '.page_content_ctn > .page_content';
+    } else {
+        this._query_selector = '#game_area_purchase';
+    }
+    console.log(this._query_selector);
   }
 
   get css() {
@@ -567,7 +572,25 @@ class PriceComparison extends HTMLBlock{
     }
     .comparison_element__price_unavailable {
       color:#7e878f;
-    }`;
+    }
+    .game_purchase_action_bg {
+      background-color: #000;
+      border-radius: 2px;
+      padding: 2px 2px 2px 0px;
+    }
+    .game_purchase_action_bg > * {
+      display:inline-block;
+      margin-left: 2px;
+      vertical-align: middle;
+    }
+    .discount_pct, .discount_prices {
+      display: inline-block!important;
+      height: 32px;
+      font-size: 25px;
+      vertical-align: middle;
+      padding: 0px 6px;
+    }
+    .discount_pct {line-height:32px;}`;
   }
 
   _placeHTMLBlock(parent_block) {
@@ -594,7 +617,12 @@ class PriceComparison extends HTMLBlock{
   }
 
   _compile() {
-    let h1_element = '<h1>Стоимость игры ' + document.querySelector("#appHubAppName").textContent + ' в других регионах</h1>';
+    let h1_element;
+    if (document.querySelector("#appHubAppName")) {
+        h1_element = '<h1>Стоимость игры ' + document.querySelector("#appHubAppName").textContent + ' в других регионах</h1>';
+    } else {
+        h1_element = '<h1>Стоимость игры в других регионах</h1>';
+    }
     let price_elements = '';
     let items = this._other_items;
     items.sort((a, b) => a.discount(this._nominal_item, this._exchange) - b.discount(this._nominal_item, this._exchange));
