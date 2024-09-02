@@ -14,8 +14,6 @@
 // @grant        GM_setValue
 // ==/UserScript==
 
-// https://flagsapi.com/
-
 
 function main() {
   const steam_elements = [
@@ -67,7 +65,6 @@ function main() {
   css.append(exchange_viewer.css);
 
   Settings.placeHTMLBlock();
-  Settings.appendEventListeners(exchange_viewer.element);
   css.append(Settings.css);
 
   const price_comparison = new PriceComparison(exchange, Settings.app_settings.comparison);
@@ -413,13 +410,7 @@ class ExchangeViewer extends HTMLBlock{
       padding-left: 9px;
       padding-right: 9px;
       color: rgb(229, 228, 220);
-    }
-
-    .cross_value_exchange__exchangeviewer:hover{
-      background-color: #3d4450;
-      transition-property: background;
-      transition-duration: 250ms;
-      cursor:pointer;
+      margin-right: 6px;
     }`
   }
 
@@ -433,7 +424,8 @@ class ExchangeViewer extends HTMLBlock{
                               " = " +
                               (this._exchange.nominal() * this._exchange.value()).toFixed(2) +
                               " " + this._exchange.to;
-    parent_block.insertBefore(this._element, parent_block.firstChild);
+    let install_steam = document.querySelector('.header_installsteam_btn');
+    parent_block.insertBefore(this._element, install_steam);
   }
 
   get element() {
@@ -799,7 +791,9 @@ class Settings {
   }
 
   static placeHTMLBlock() {
+    this._placeSettingsButton();
     this._placeHTMLBlock();
+    this.appendEventListeners();
   }
 
   static _comparison_item(cc, path, sign) {
@@ -816,6 +810,15 @@ class Settings {
     return template_comparison;
   }
 
+  static _placeSettingsButton() {
+    this._settings_button = document.createElement('div');
+    this._settings_button.innerHTML = '<div class="cve__cog-rotate">⚙️</div>'; // ⚙ or ⚙️
+    this._settings_button.className = 'cve__settings_open-button';
+    this._settings_button.title = 'Настройки расширения cross-value exchange';
+    let install_steam = document.querySelector('.header_installsteam_btn');
+    document.getElementById('global_action_menu').insertBefore(this._settings_button, install_steam);
+  }
+
   static _placeHTMLBlock() {
     this.html_element = document.createElement('div');
     this.html_element.className = 'cve__settings_lightbox';
@@ -826,20 +829,19 @@ class Settings {
     close_button.className = 'cve__settings_close-button';
     close_button.innerHTML = 'X';
     this.html_element.append(close_button);
-    
+
     let popup_inner = this._createPopupInner();
 
     let popup = document.createElement('div');
     popup.className = 'cve__settings_popup';
     popup.append(popup_inner);
     popup.innerHTML += this._popup_buttons;
-    this.html_element.append(popup);                    
+    this.html_element.append(popup);
     document.body.appendChild(this.html_element);
     this._addEventListenersToInner();
-    
   }
 
-  static appendEventListeners(connected_button) {
+  static appendEventListeners() {
     this.html_element.addEventListener('click', (event) => {
       if (event.target === this.html_element) {
         this.html_element.style.display = 'none';
@@ -847,7 +849,7 @@ class Settings {
       }
     });
 
-    connected_button.addEventListener('click', () => {
+    this._settings_button.addEventListener('click', () => {
       this.html_element.style.display = 'flex';
       document.body.style.overflow = 'hidden';
     });
@@ -863,15 +865,25 @@ class Settings {
 
     const cancel_button = document.querySelector('#cve__settings_cancel');
     cancel_button.addEventListener('click', () => {
-      if (confirm('Вы уверены?')) {
-        document.querySelector('.cve__settings_popup_inner').innerHTML = this._createPopupInner().innerHTML;
-        this._addEventListenersToInner();
+      if (cancel_button.dataset.cveСancelСonfirmation === "True") {
+          document.querySelector('.cve__settings_popup_inner').innerHTML = this._createPopupInner().innerHTML;
+          this._addEventListenersToInner();
+          cancel_button.dataset.cveСancelСonfirmation = "False";
+          cancel_button.classList.remove('cve__button_red');
+          cancel_button.innerHTML = '<span>Отмена</span>';
+      } else {
+          cancel_button.dataset.cveСancelСonfirmation = "True";
+          cancel_button.classList.add('cve__button_red');
+          cancel_button.innerHTML = '<span>Вы уверены?</span>';
       }
     });
     const apply_button = document.querySelector('#cve__settings_apply');
     apply_button.addEventListener('click', () => {
       this._saveSettingsFromForm(document.querySelector('.cve__settings_popup_inner'));
-      alert("Сохранено");
+      //alert("Сохранено");
+      apply_button.innerHTML = '<span>✓&nbsp;&nbsp;&nbsp;&nbsp;Сохранено</span>';
+      setTimeout(() => location.reload(), 500);
+
     })
   }
 
@@ -917,7 +929,7 @@ class Settings {
                             <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.from.sign ?? '') +`" /></label>
                             <label>Путь до валюты<input type="text" class="path" value="`+ (this.app_settings.exchange.from.path ?? '') +`" /></label>
                             <label>Обозначение валюты Steam<input type="text" class="steam_variation" value="`+ (this.app_settings.exchange.from.steam_variation ?? '') +`" /></label>
-                          </div> 
+                          </div>
                           <span>=</span>
                           <div class="to">
                             <label>Валютный знак<input type="text" class="sign" value="`+ (this.app_settings.exchange.to.sign ?? '') +`" /></label>
@@ -943,7 +955,7 @@ class Settings {
 
   static get _popup_buttons() {
     return `<div class="cve__popup_buttons">
-              <div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_reset"><span>СБРОС</span></div>
+              <div class="btnv6_blue_hoverfade btn_medium cve__button cve__button_red" id="cve__settings_reset"><span>СБРОС</span></div>
               <div class="cve__popup_buttons_right">
                 <div class="btnv6_blue_hoverfade btn_medium cve__button" id="cve__settings_cancel"><span>Отмена</span></div>
                 <div class="btn_green_steamui btn_medium cve__button" id="cve__settings_apply"><span>Применить</span></div>
@@ -990,8 +1002,6 @@ class Settings {
   }
 
   static get css() {
-
-
     return `
       .cve__settings_lightbox {
         position:fixed;
@@ -1019,6 +1029,7 @@ class Settings {
         width: 800px;
         background-color: #1b2838;
         cursor: default;
+        border-radius:5px;
       }
       .cve__settings_popup_inner {
         width: 100%;
@@ -1052,12 +1063,12 @@ class Settings {
         cursor: pointer;
         user-select: none;
       }
-      #cve__settings_reset {
+      .cve__button_red, #cve__settings_reset {
         background-color: rgba(245, 103, 103, 0.1);
         color: #f56767!important;
       }
-      #cve__settings_reset:hover {
-        background: linear-gradient( -60deg, #9b4141 5%,#f56767 95%);
+      .cve__button_red:hover, #cve__settings_reset:hover {
+        background: linear-gradient( -60deg, #9b4141 5%,#f56767 95%)!important;
         color: white!important;
       }
       #cve__settings_apply span {
@@ -1120,6 +1131,30 @@ class Settings {
       .cve__settings_comparison_items > div:first-of-type .item_moveup, .cve__settings_comparison_items > div:last-of-type  .item_movedown {
         background-color: grey;
         pointer-events: none;
+      }
+      .cve__settings_open-button {
+        display: inline-block;
+        position: relative;
+        height: 24px;
+        line-height: 24px;
+        font-size: 16px;
+        background-color: rgba(103, 112, 123, 0.2);
+        padding-left: 5px;
+        padding-right: 5px;
+        color: rgb(229, 228, 220);
+        margin-right: 6px;
+      }
+      .cve__settings_open-button:hover{
+        background-color: #3d4450;
+        transition-property: background;
+        transition-duration: 250ms;
+        cursor:pointer;
+      }
+      .cve__cog-rotate {
+        transition: transform .3s ease-in-out;
+      }
+      .cve__cog-rotate:hover {
+        transform: rotate(-90deg)!important;
       }
     `;
   }
