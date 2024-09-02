@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.3.2
+// @version      0.5.4
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -576,7 +576,7 @@ class PriceComparison extends HTMLBlock{
       vertical-align: middle;
     }
     .discount_pct, .discount_prices {
-      display: inline-block!important;
+      display: inline-block;
       height: 32px;
       font-size: 25px;
       vertical-align: middle;
@@ -620,7 +620,7 @@ class PriceComparison extends HTMLBlock{
     items.sort((a, b) => a.discount(this._nominal_item, this._exchange) - b.discount(this._nominal_item, this._exchange));
     items.forEach((item) => {
       price_elements += '<div class="game_purchase_action_bg">';
-      price_elements += '<div class="discount_block game_purchase_discount">';
+      price_elements += '<div class="game_purchase_discount">';
       price_elements += this._percentage_element(item);
       price_elements += this._price_element(item);
       price_elements += '</div>';
