@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.5
+// @version      0.5.5.2
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -54,6 +54,10 @@ function main() {
   ];
 
   const css = new CSSImplementerCustom();
+
+  Settings.placeHTMLBlock();
+  css.append(Settings.css);
+
   const exchange = new Exchanger(Settings.app_settings.exchange);
   exchange.init();
 
@@ -63,9 +67,6 @@ function main() {
   const exchange_viewer = new ExchangeViewerRu(exchange);
   exchange_viewer.placeHTMLBlock();
   css.append(exchange_viewer.css);
-
-  Settings.placeHTMLBlock();
-  css.append(Settings.css);
 
   const price_comparison = new PriceComparison(exchange, Settings.app_settings.comparison);
   price_comparison.placeHTMLBlock();
@@ -78,8 +79,6 @@ function main() {
 class HTTPRequest {
   _link = undefined;
   _json_value = undefined;
-  //_content = undefined;
-  //_json_path = undefined;
   _is_parsed = false;
 
   get is_parsed() {return this._is_parsed;}
@@ -506,12 +505,11 @@ class PriceComparison extends HTMLBlock{
       new_element.init();
       this._other_items.push(new_element);
     }
+    this._query_selector = '#game_area_purchase';
     if (document.querySelector('#error_box')) {
-        this._query_selector = '.page_content_ctn > .page_content';
-    } else {
-        this._query_selector = '#game_area_purchase';
+        this._error_page_compiler = new GamePageCompiler();
+        this._error_page_compiler.placeHTMLBlock();
     }
-    console.log(this._query_selector);
   }
 
   get css() {
@@ -727,6 +725,100 @@ class ComparisonElement extends HTTPRequest {
     return this._parseValueFromJSON(price_path, this._json_value);
   }
 
+}
+
+
+class GamePageCompiler {
+  game_info = undefined;
+  game_page = undefined;
+
+  constructor(){
+    let steam_element_id = this._get_game_id();
+    this.game_info = new GameInfoLoader(steam_element_id);
+    this.game_info.init();
+    this.game_page = new GamePageLoader();
+    this.game_page.init();
+  }
+
+  /*result_printf() {
+    const checkParsed = () => {
+      if (this.game_page.is_parsed && this.game_info.is_parsed) {
+        console.log(this.game_page._http_value);
+        console.log('==> | <==')
+        console.log(this.game_info._json_value);
+        clearInterval(intervalId);
+      }
+    };
+
+    const intervalId = setInterval(checkParsed, 500);
+  }*/
+
+  placeHTMLBlock() {
+    const placeParsed = () => {
+      if (this.game_page.is_parsed && this.game_info.is_parsed) {
+        document.querySelector('.page_content_ctn .page_content').innerHTML = this.game_page._http_value;
+        clearInterval(intervalId);
+        }
+    };
+
+    const intervalId = setInterval(placeParsed, 500);
+  }
+
+
+  _get_game_id() {
+    const url = window.location.href;
+    const regex = /\/app\/(\d+)/;
+
+    const match = url.match(regex);
+    if (match) {
+        return match[1];
+    } else {
+        return null;
+    }
+  }
+}
+
+
+class GameInfoLoader extends HTTPRequest {
+  constructor(steam_element_id) {
+    super();
+    this._link = 'https://store.steampowered.com/api/appdetails?appids=' + steam_element_id + '&cc=eu';
+  }
+
+  init() {
+    fetch(this._link, {
+      credentials: 'omit'
+    })
+    .then(response => response.json())
+    .then(result => this._json_value = result)
+    .then(this._is_parsed = true)
+    .catch(error => console.error('Error:', error));
+  }
+
+}
+
+
+class GamePageLoader extends HTTPRequest {
+  _http_value = undefined;
+
+  constructor() {
+    super();
+    this._link = 'https://raw.githubusercontent.com/An-Eugene/steam_cross-value_exchange/unblock-banned-pages/docs/game_part.html';
+  }
+
+  init() {
+    GM_xmlhttpRequest({
+      method: "GET",
+      url: this._link,
+      headers: {
+        "Content-Type": "text/html"
+      },
+      onload: (response) => {
+        this._http_value = response.responseText;
+        this._is_parsed = true;
+      }
+    });
+  }
 }
 
 
@@ -1154,7 +1246,7 @@ class Settings {
         transition: transform .3s ease-in-out;
       }
       .cve__cog-rotate:hover {
-        transform: rotate(-90deg)!important;
+        transform: rotate(-90deg);
       }
     `;
   }
