@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.6
+// @version      0.5.7
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
