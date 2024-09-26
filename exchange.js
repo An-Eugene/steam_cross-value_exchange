@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.5
+// @version      0.5.6
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -575,14 +575,14 @@ class PriceComparison extends HTMLBlock{
       margin-left: 2px;
       vertical-align: middle;
     }
-    .discount_pct, .discount_prices {
+    .cve__discount_pct, .discount_prices {
       display: inline-block;
       height: 32px;
       font-size: 25px;
       vertical-align: middle;
       padding: 0px 6px;
     }
-    .discount_pct {line-height:32px;}`;
+    .cve__discount_pct {line-height:32px;}`;
   }
 
   _placeHTMLBlock(parent_block) {
@@ -634,7 +634,7 @@ class PriceComparison extends HTMLBlock{
   }
 
   _percentage_element(item) {
-    let div_element = '<div class="discount_pct';
+    let div_element = '<div class="cve__discount_pct discount_pct';
     if (!this._nominal_item || !item.is_available()) {
       //return div_element + ' comparison_element__discount_equal" style="font-size:15px;">N/A</div>';
       return '';
