@@ -575,7 +575,7 @@ class PriceComparison extends HTMLBlock{
       margin-left: 2px;
       vertical-align: middle;
     }
-    .cve__discount_pct, .discount_prices {
+    .cve__discount_pct, .cve__discount_prices {
       display: inline-block;
       height: 32px;
       font-size: 25px;
@@ -651,9 +651,9 @@ class PriceComparison extends HTMLBlock{
   }
   _price_element(item) {
     if (!item.is_available()) {
-      return '<div class="discount_prices comparison_element__price comparison_element__price_unavailable">unavailable</div>';
+      return '<div class="cve__discount_prices discount_prices comparison_element__price comparison_element__price_unavailable">unavailable</div>';
     }
-    return '<div class="discount_prices comparison_element__price">' + item.price_string(this._exchange) + '</div>';
+    return '<div class="cve__discount_prices discount_prices comparison_element__price">' + item.price_string(this._exchange) + '</div>';
   }
 
   _flag_element(item) {
