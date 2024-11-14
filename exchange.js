@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.7
+// @version      0.5.8
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -657,7 +657,8 @@ class PriceComparison extends HTMLBlock{
   }
 
   _flag_element(item) {
-    let flag_link = 'https://flagcdn.com/h40/' + item + '.webp';
+    // let flag_link = 'https://flagcdn.com/h40/' + item + '.webp';
+    let flag_link = 'https://cdn.jsdelivr.net/gh/hampusborgos/country-flags@main/svg/' + item + '.svg';
     return '<img class="comparison_element__flag" src="' + flag_link + '" alt="' + item + '" title="' + item + '">';
   }
 }
