@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam cross-value exchange
 // @namespace    Aneugene
-// @version      0.5.8
+// @version      0.5.9
 // @description  Steam auto change values. Also show exchange value and different prices
 // @author       Aneugene
 // @match        store.steampowered.com/*
@@ -817,7 +817,11 @@ class Settings {
     this._settings_button.className = 'cve__settings_open-button';
     this._settings_button.title = 'Настройки расширения cross-value exchange';
     let install_steam = document.querySelector('.header_installsteam_btn');
-    document.getElementById('global_action_menu').insertBefore(this._settings_button, install_steam);
+    let insert_place = document.getElementById('global_action_menu');  // legacy path
+    if (insert_place === undefined) {
+      insert_place = document.querySelector('.h3Jy-1Il1os-');  // new path in wishlist etc
+    }
+    insert_place.insertBefore(this._settings_button, install_steam);
   }
 
   static _placeHTMLBlock() {
